@@ -1,51 +1,14 @@
 /* =========================================================
    Sirwali Joseph — Portfolio interactions (vanilla JS)
+   Minimal: nav state, mobile menu, scroll-spy, subtle reveal.
    ========================================================= */
 (function () {
   "use strict";
 
-  /* ---------- Typewriter ---------- */
-  function typeWriter(el) {
-    if (!el) return;
-    var words = (el.dataset.words || "").split("|").filter(Boolean);
-    if (!words.length) return;
-    var w = 0,
-      c = 0,
-      deleting = false;
-
-    function tick() {
-      var word = words[w];
-      el.textContent = word.substring(0, c);
-      if (!deleting && c < word.length) {
-        c++;
-        setTimeout(tick, 70);
-      } else if (deleting && c > 0) {
-        c--;
-        setTimeout(tick, 35);
-      } else if (!deleting && c === word.length) {
-        deleting = true;
-        setTimeout(tick, 1600);
-      } else {
-        deleting = false;
-        w = (w + 1) % words.length;
-        setTimeout(tick, 320);
-      }
-    }
-    tick();
-  }
-  typeWriter(document.getElementById("typed"));
-
-  /* ---------- Navbar scroll state + progress ---------- */
+  /* ---------- Header border on scroll ---------- */
   var nav = document.querySelector(".nav");
-  var progress = document.querySelector(".progress");
   function onScroll() {
-    var y = window.scrollY || document.documentElement.scrollTop;
-    if (nav) nav.classList.toggle("scrolled", y > 24);
-    if (progress) {
-      var h =
-        document.documentElement.scrollHeight - window.innerHeight;
-      progress.style.width = (h > 0 ? (y / h) * 100 : 0) + "%";
-    }
+    if (nav) nav.classList.toggle("scrolled", (window.scrollY || 0) > 12);
   }
   window.addEventListener("scroll", onScroll, { passive: true });
   onScroll();
@@ -62,7 +25,37 @@
     });
   }
 
-  /* ---------- Reveal on scroll ---------- */
+  /* ---------- Scroll-spy nav ---------- */
+  var navAnchors = Array.prototype.slice.call(
+    document.querySelectorAll(".nav-links a[href^='#']")
+  );
+  var sections = navAnchors
+    .map(function (a) {
+      return document.querySelector(a.getAttribute("href"));
+    })
+    .filter(Boolean);
+  if (sections.length && "IntersectionObserver" in window) {
+    var spy = new IntersectionObserver(
+      function (entries) {
+        entries.forEach(function (en) {
+          if (en.isIntersecting) {
+            navAnchors.forEach(function (a) {
+              a.classList.toggle(
+                "active",
+                a.getAttribute("href") === "#" + en.target.id
+              );
+            });
+          }
+        });
+      },
+      { rootMargin: "-45% 0px -50% 0px" }
+    );
+    sections.forEach(function (s) {
+      spy.observe(s);
+    });
+  }
+
+  /* ---------- Subtle reveal on scroll ---------- */
   var revs = document.querySelectorAll(".reveal");
   if ("IntersectionObserver" in window) {
     var io = new IntersectionObserver(
@@ -74,7 +67,7 @@
           }
         });
       },
-      { threshold: 0.12, rootMargin: "0px 0px -40px 0px" }
+      { threshold: 0.1, rootMargin: "0px 0px -30px 0px" }
     );
     revs.forEach(function (r) {
       io.observe(r);
@@ -83,37 +76,6 @@
     revs.forEach(function (r) {
       r.classList.add("in");
     });
-  }
-
-  /* ---------- Animated stat counters ---------- */
-  function animateCount(el) {
-    var target = parseFloat(el.dataset.count);
-    var suffix = el.dataset.suffix || "";
-    var dur = 1400,
-      start = null;
-    function step(ts) {
-      if (!start) start = ts;
-      var p = Math.min((ts - start) / dur, 1);
-      var eased = 1 - Math.pow(1 - p, 3);
-      var val = target * eased;
-      el.textContent =
-        (target % 1 === 0 ? Math.round(val) : val.toFixed(0)) + suffix;
-      if (p < 1) requestAnimationFrame(step);
-    }
-    requestAnimationFrame(step);
-  }
-  var counted = false;
-  var statsEl = document.querySelector(".stats");
-  if (statsEl && "IntersectionObserver" in window) {
-    var sio = new IntersectionObserver(function (entries) {
-      entries.forEach(function (en) {
-        if (en.isIntersecting && !counted) {
-          counted = true;
-          document.querySelectorAll(".num[data-count]").forEach(animateCount);
-        }
-      });
-    });
-    sio.observe(statsEl);
   }
 
   /* ---------- Year ---------- */
